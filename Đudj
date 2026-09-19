@@ -1,0 +1,643 @@
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local HttpService = game:GetService("HttpService")
+
+local OrionLib = {
+	Các phần tử = {},
+	ThemeObjects = {},
+	Kết nối = {},
+	Cờ = {},
+	Chủ đề = {
+		Mặc định = {
+			Main = Color3.fromRGB(32, 24, 12),
+			Thứ hai = Color3.fromRGB(32, 32, 32),
+			Stroke = Color3.fromRGB(60, 60, 60),
+			Divider = Color3.fromRGB(60, 60, 60),
+			Văn bản = Color3.fromRGB(240, 240, 240),
+			TextDark = Color3.fromRGB(150, 150, 150)
+		}
+	},
+	SelectedTheme = "Mặc định",
+	Thư mục = nil,
+	SaveCfg = false
+}
+
+--Biểu tượng lông vũ https://github.com/evoincorp/lucideblox/tree/master/src/modules/util - Được tạo bởi 7kayoh
+Biểu tượng cục bộ = {}
+
+local Success, Response = pcall(function()
+	Icons = HttpService:JSONDecode(game:HttpGetAsync("https://raw.githubusercontent.com/evoincorp/lucideblox/master/src/modules/util/icons.json")).icons
+kết thúc)
+
+Nếu không thành công thì
+	cảnh báo("\nThư viện Orion - Không thể tải biểu tượng Feather. Mã lỗi: " .. Phản hồi .. "\n")
+kết thúc	
+
+hàm cục bộ GetIcon(IconName)
+	nếu Icons[IconName] ~= nil thì
+		trả về Icons[IconName]
+	khác
+		trả về nil
+	kết thúc
+kết thúc   
+
+local Orion = Instance.new("ScreenGui")
+Orion.Name = "Orion"
+nếu đồng bộ thì
+	syn.protect_gui(Orion)
+	Orion.Parent = game.CoreGui
+khác
+	Orion.Parent = gethui() hoặc game.CoreGui
+kết thúc
+
+nếu gethui thì
+	for _, Interface in ipairs(gethui():GetChildren()) do
+		nếu Interface.Name == Orion.Name và Interface ≠ Orion thì
+			Giao diện:Destroy()
+		kết thúc
+	kết thúc
+khác
+	for _, Interface in ipairs(game.CoreGui:GetChildren()) do
+		nếu Interface.Name == Orion.Name và Interface ≠ Orion thì
+			Giao diện:Destroy()
+		kết thúc
+	kết thúc
+kết thúc
+
+hàm OrionLib:IsRunning()
+	nếu gethui thì
+		return Orion.Parent == gethui()
+	khác
+		return Orion.Parent == game:GetService("CoreGui")
+	kết thúc
+
+kết thúc
+
+hàm cục bộ AddConnection(Signal, Function)
+	nếu (không phải OrionLib:IsRunning()) thì
+		trở lại
+	kết thúc
+	local SignalConnect = Signal:Connect(Function)
+	table.insert(OrionLib.Connections, SignalConnect)
+	trả về SignalConnect
+kết thúc
+
+task.spawn(function()
+	trong khi (OrionLib:IsRunning()) thực hiện
+		Chờ đợi()
+	kết thúc
+
+	for _, Connection in next, OrionLib.Connections do
+		Kết nối: Ngắt kết nối()
+	kết thúc
+kết thúc)
+
+hàm cục bộ MakeDraggable(DragPoint, Main)
+	pcall(function()
+		local Dragging, DragInput, MousePos, FramePos = false
+		AddConnection(DragPoint.InputBegan, function(Input)
+			nếu input.UserInputType == Enum.UserInputType.MouseButton1 thì
+				Kéo = đúng
+				MousePos = Input.Position
+				FramePos = Main.Position
+
+				Đầu vào.Đã thay đổi: Kết nối (hàm())
+					if Input.UserInputState == Enum.UserInputState.End then
+						Kéo = sai
+					kết thúc
+				kết thúc)
+			kết thúc
+		kết thúc)
+		AddConnection(DragPoint.InputChanged, function(Input)
+			nếu Input.UserInputType == Enum.UserInputType.MouseMovement thì
+				DragInput = Input
+			kết thúc
+		kết thúc)
+		AddConnection(UserInputService.InputChanged, function(Input)
+			nếu Input == DragInput và đang kéo thì
+				local Delta = Input.Position - MousePos
+				--TweenService:Create(Main, TweenInfo.new(0.05, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(FramePos.X.Scale,FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)}):Play()
+				Main.Position = UDim2.new(FramePos.X.Scale,FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)
+			kết thúc
+		kết thúc)
+	kết thúc)
+kết thúc    
+
+hàm cục bộ Create(Name, Properties, Children)
+	local Object = Instance.new(Name)
+	for i, v in next, Properties or {} do
+		Đối tượng[i] = v
+	kết thúc
+	for i, v in next, Children or {} do
+		v.Parent = Đối tượng
+	kết thúc
+	trả về Đối tượng
+kết thúc
+
+hàm cục bộ CreateElement(ElementName, ElementFunction)
+	OrionLib.Elements[ElementName] = function(...)
+		trả về ElementFunction(...)
+	kết thúc
+kết thúc
+
+hàm cục bộ MakeElement(ElementName, ...)
+	local NewElement = OrionLib.Elements[ElementName](...)
+	trả về phần tử mới
+kết thúc
+
+hàm cục bộ SetProps(Element, Props)
+	table.foreach(Props, function(Property, Value)
+		Phần tử[Thuộc tính] = Giá trị
+	kết thúc)
+	trả về phần tử
+kết thúc
+
+hàm cục bộ SetChildren(Element, Children)
+	bảng.foreach(Children, function(_, Child)
+		Con.Cha = Phần tử
+	kết thúc)
+	trả về phần tử
+kết thúc
+
+hàm cục bộ Round(Số, Hệ số)
+	local Result = math.floor(Number/Factor + (math.sign(Number) * 0.5)) * Factor
+	nếu Kết quả < 0 thì Kết quả = Kết quả + Hệ số
+	Trả về kết quả
+kết thúc
+
+hàm cục bộ ReturnProperty(Object)
+	nếu Đối tượng là ("Frame") hoặc Đối tượng là ("TextButton") thì
+		trả về "BackgroundColor3"
+	kết thúc
+	nếu Object:IsA("ScrollingFrame") thì
+		trả về "ScrollBarImageColor3"
+	kết thúc
+	nếu Object:IsA("UIStroke") thì
+		trả về "Màu sắc"
+	kết thúc
+	nếu Object:IsA("TextLabel") hoặc Object:IsA("TextBox") thì
+		trả về "TextColor3"
+	kết thúc   
+	nếu Object:IsA("ImageLabel") hoặc Object:IsA("ImageButton") thì
+		trả về "ImageColor3"
+	kết thúc   
+kết thúc
+
+hàm cục bộ AddThemeObject(Object, Type)
+	nếu không phải OrionLib.ThemeObjects[Type] thì
+		OrionLib.ThemeObjects[Type] = {}
+	kết thúc    
+	table.insert(OrionLib.ThemeObjects[Type], Object)
+	Object[ReturnProperty(Object)] = OrionLib.Themes[OrionLib.SelectedTheme][Type]
+	trả về Đối tượng
+kết thúc    
+
+hàm cục bộ SetTheme()
+	for Name, Type in pairs(OrionLib.ThemeObjects) do
+		for _, Object in pairs(Type) do
+			Object[ReturnProperty(Object)] = OrionLib.Themes[OrionLib.SelectedTheme][Name]
+		kết thúc    
+	kết thúc    
+kết thúc
+
+hàm cục bộ PackColor(Color)
+	return {R = Color.R * 255, G = Color.G * 255, B = Color.B * 255}
+kết thúc    
+
+hàm cục bộ UnpackColor(Color)
+	return Color3.fromRGB(Color.R, Color.G, Color.B)
+kết thúc
+
+hàm cục bộ LoadCfg(Config)
+	Dữ liệu cục bộ = HttpService:JSONDecode(Config)
+	bảng.foreach(Dữ liệu, hàm(a,b)
+		nếu OrionLib.Flags[a] thì
+			sinh ra (hàm()
+				nếu OrionLib.Flags[a].Type == "Colorpicker" thì
+					OrionLib.Flags[a]:Set(UnpackColor(b))
+				khác
+					OrionLib.Flags[a]:Set(b)
+				kết thúc    
+			kết thúc)
+		khác
+			cảnh báo("Trình tải cấu hình thư viện Orion - Không tìm thấy ", a ,b)
+		kết thúc
+	kết thúc)
+kết thúc
+
+hàm cục bộ SaveCfg(Name)
+	Dữ liệu cục bộ = {}
+	for i,v in pairs(OrionLib.Flags) do
+		nếu v.Save thì
+			nếu v.Type == "Colorpicker" thì
+				Data[i] = PackColor(v.Value)
+			khác
+				Dữ liệu[i] = v.Giá trị
+			kết thúc
+		kết thúc	
+	kết thúc
+	writefile(OrionLib.Folder .. "/" .. Name .. ".txt", tostring(HttpService:JSONEncode(Data)))
+kết thúc
+
+local WhitelistedMouse = {Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2,Enum.UserInputType.MouseButton3}
+local BlacklistedKeys = {Enum.KeyCode.Unknown,Enum.KeyCode.W,Enum.KeyCode.A,Enum.KeyCode.S,Enum.KeyCode.D,Enum.KeyCode.Up,Enum.KeyCode.Left,Enum.KeyCode.Down,Enum.KeyCode.Right,Enum.KeyCode.Slash,Enum.KeyCode.Tab,Enum.KeyCode.Backspace,Enum.KeyCode.Escape}
+
+hàm cục bộ CheckKey(Table, Key)
+	for _, v in next, Table do
+		nếu v == Key thì
+			trả về giá trị đúng
+		kết thúc
+	kết thúc
+kết thúc
+
+CreateElement("Corner", function(Scale, Offset)
+	local Corner = Create("UICorner", {
+		CornerRadius = UDim.new(Scale hoặc 0, Offset hoặc 10)
+	})
+	Góc trả lại
+kết thúc)
+
+CreateElement("Stroke", function(Color, Thickness)
+	local Stroke = Create("UIStroke", {
+		Màu = Màu hoặc Màu3.từRGB(255, 255, 255),
+		Độ dày = Độ dày hoặc 1
+	})
+	trở lại Stroke
+kết thúc)
+
+CreateElement("List", function(Scale, Offset)
+	local List = Create("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(Scale hoặc 0, Offset hoặc 0)
+	})
+	trả về danh sách
+kết thúc)
+
+CreateElement("Padding", function(Bottom, Left, Right, Top)
+	local Padding = Create("UIPadding", {
+		PaddingBottom = UDim.new(0, Bottom or 4),
+		PaddingLeft = UDim.new(0, Left or 4),
+		PaddingRight = UDim.new(0, Right or 4),
+		PaddingTop = UDim.new(0, Top hoặc 4)
+	})
+	trả về phần đệm
+kết thúc)
+
+CreateElement("TFrame", function()
+	local TFrame = Create("Frame", {
+		Độ trong suốt của nền = 1
+	})
+	trả về TFrame
+kết thúc)
+
+CreateElement("Frame", function(Color)
+	local Frame = Create("Frame", {
+		BackgroundColor3 = Color hoặc Color3.fromRGB(255, 255, 255),
+		BorderSizePixel = 0
+	})
+	trả về Khung
+kết thúc)
+
+CreateElement("RoundFrame", function(Color, Scale, Offset)
+	local Frame = Create("Frame", {
+		BackgroundColor3 = Color hoặc Color3.fromRGB(255, 255, 255),
+		BorderSizePixel = 0
+	}, {
+		Tạo("UICorner", {
+			CornerRadius = UDim.new(Scale, Offset)
+		})
+	})
+	trả về Khung
+kết thúc)
+
+CreateElement("Button", function()
+	Nút cục bộ = Tạo("Nút văn bản", {
+		Văn bản = "",
+		AutoButtonColor = false,
+		Độ trong suốt của nền = 1,
+		BorderSizePixel = 0
+	})
+	Nút quay lại
+kết thúc)
+
+CreateElement("ScrollFrame", function(Color, Width)
+	local ScrollFrame = Create("ScrollingFrame", {
+		Độ trong suốt của nền = 1,
+		MidImage = "rbxassetid7445543667",
+		BottomImage = "rbxassetid7445543667",
+		TopImage = "rbxassetid7445543667",
+		ScrollBarImageColor3 = Màu sắc,
+		BorderSizePixel = 0,
+		Độ dày thanh cuộn = Chiều rộng,
+		CanvasSize = UDim2.new(0, 0, 0, 0)
+	})
+	trả về ScrollFrame
+kết thúc)
+
+CreateElement("Image", function(ImageID)
+	local ImageNew = Create("ImageLabel", {
+		Hình ảnh = ID hình ảnh,
+		Độ trong suốt của nền = 1
+	})
+
+	nếu GetIcon(ImageID) ~= nil thì
+		ImageNew.Image = GetIcon(ImageID)
+	kết thúc	
+
+	trả về ImageNew
+kết thúc)
+
+CreateElement("ImageButton", function(ImageID)
+	local Image = Create("ImageButton", {
+		Hình ảnh = ID hình ảnh,
+		Độ trong suốt của nền = 1
+	})
+	Trả về hình ảnh
+kết thúc)
+
+CreateElement("Label", function(Text, TextSize, Transparency)
+	Nhãn cục bộ = Tạo("Nhãn văn bản", {
+		Văn bản = Văn bản hoặc "",
+		TextColor3 = Color3.fromRGB(240, 240, 240),
+		TextTransparency = Độ trong suốt hoặc 0,
+		Kích thước văn bản = Kích thước văn bản hoặc 15,
+		Phông chữ = Enum.Font.Gotham,
+		RichText = true,
+		Độ trong suốt của nền = 1,
+		TextXAlignment = Enum.TextXAlignment.Left
+	})
+	Nhãn trả lại
+kết thúc)
+
+local NotificationHolder = SetProps(SetChildren(MakeElement("TFrame"), {
+	SetProps(MakeElement("List"), {
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		VerticalAlignment = Enum.VerticalAlignment.Bottom,
+		Padding = UDim.new(0, 5)
+	})
+}), {
+	Vị trí = UDim2.new(1, -25, 1, -25),
+	Kích thước = UDim2.new(0, 300, 1, -25),
+	AnchorPoint = Vector2.new(1, 1),
+	Cha mẹ = Orion
+})
+
+hàm OrionLib:MakeNotification(NotificationConfig)
+	sinh ra (hàm()
+		NotificationConfig.Name = NotificationConfig.Name hoặc "Notification"
+		NotificationConfig.Content = NotificationConfig.Content hoặc "Test"
+		NotificationConfig.Image = NotificationConfig.Image hoặc "rbxassetid4384403532"
+		NotificationConfig.Time = NotificationConfig.Time hoặc 15
+
+		local NotificationParent = SetProps(MakeElement("TFrame"), {
+			Kích thước = UDim2.new(1, 0, 0, 0),
+			Kích thước tự động = Enum.Kích thước tự động.Y,
+			Cha mẹ = Người giữ thông báo
+		})
+
+		local NotificationFrame = SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(25, 25, 25), 0, 10), {
+			Cha mẹ = Thông báo cha,
+			Kích thước = UDim2.new(1, 0, 0, 0),
+			Vị trí = UDim2.new(1, -55, 0, 0),
+			Độ trong suốt của nền = 0,
+			Kích thước tự động = Enum.Kích thước tự động.Y
+		}), {
+			MakeElement("Stroke", Color3.fromRGB(93, 93, 93), 1.2),
+			MakeElement("Đệm", 12, 12, 12, 12),
+			SetProps(MakeElement("Image", NotificationConfig.Image), {
+				Kích thước = UDim2.new(0, 20, 0, 20),
+				ImageColor3 = Color3.fromRGB(240, 240, 240),
+				Tên = "Biểu tượng"
+			}),
+			SetProps(MakeElement("Label", NotificationConfig.Name, 15), {
+				Kích thước = UDim2.new(1, -30, 0, 20),
+				Vị trí = UDim2.new(0, 30, 0, 0),
+				Phông chữ = Enum.Font.GothamBold,
+				Tên = "Chức danh"
+			}),
+			SetProps(MakeElement("Label", NotificationConfig.Content, 14), {
+				Kích thước = UDim2.new(1, 0, 0, 0),
+				Vị trí = UDim2.new(0, 0, 0, 25),
+				Phông chữ = Enum.Font.GothamSemibold,
+				Tên = "Nội dung",
+				Kích thước tự động = Enum.Kích thước tự động.Y,
+				TextColor3 = Color3.fromRGB(200, 200, 200),
+				TextWrapped = true
+			})
+		})
+
+		TweenService:Create(NotificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+
+		chờ(NotificationConfig.Time - 0.88)
+		TweenService:Create(NotificationFrame.Icon, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {ImageTransparency = 1}):Play()
+		TweenService:Create(NotificationFrame, TweenInfo.new(0.8, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.6}):Play()
+		chờ (0.3)
+		TweenService:Create(NotificationFrame.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {Transparency = 0.9}):Play()
+		TweenService:Create(NotificationFrame.Title, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.4}):Play()
+		TweenService:Create(NotificationFrame.Content, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.5}):Play()
+		chờ (0.05)
+
+		NotificationFrame:TweenPosition(UDim2.new(1, 20, 0, 0),'In','Quint',0.8,true)
+		chờ (1.35)
+		NotificationFrame:Destroy()
+	kết thúc)
+kết thúc    
+
+hàm OrionLib:Init()
+	nếu OrionLib.SaveCfg thì	
+		pcall(function()
+			if isfile(OrionLib.Folder .. "/" .. game.GameId .. ".txt") then
+				LoadCfg(readfile(OrionLib.Folder .. "/" .. game.GameId .. ".txt"))
+				OrionLib:MakeNotification({
+					Tên = "Cấu hình",
+					Nội dung = "Cấu hình tự động tải cho trò chơi " .. game.GameId .. ".",
+					Thời gian = 5
+				})
+			kết thúc
+		kết thúc)		
+	kết thúc	
+kết thúc	
+
+hàm OrionLib:MakeWindow(WindowConfig)
+	local FirstTab = true
+	cục bộ được tối thiểu hóa = sai
+	cục bộ Đã tải = false
+	local UIHidden = false
+
+	WindowConfig = WindowConfig hoặc {}
+	WindowConfig.Name = WindowConfig.Name hoặc "Orion Library"
+	WindowConfig.ConfigFolder = WindowConfig.ConfigFolder hoặc WindowConfig.Name
+	WindowConfig.SaveConfig = WindowConfig.SaveConfig hoặc false
+	WindowConfig.HidePremium = WindowConfig.HidePremium hoặc false
+	nếu WindowConfig.IntroEnabled == nil thì
+		WindowConfig.IntroEnabled = true
+	kết thúc
+	WindowConfig.IntroText = WindowConfig.IntroText hoặc "ZingMod"
+	WindowConfig.CloseCallback = WindowConfig.CloseCallback hoặc function() end
+	WindowConfig.ShowIcon = WindowConfig.ShowIcon hoặc false
+	WindowConfig.Icon = WindowConfig.Icon hoặc "rbxassetid8834748103"
+	WindowConfig.IntroIcon = WindowConfig.IntroIcon hoặc "rbxassetid8834748103"
+	OrionLib.Folder = WindowConfig.ConfigFolder
+	OrionLib.SaveCfg = WindowConfig.SaveConfig
+
+	nếu WindowConfig.SaveConfig thì
+		nếu không phải là thư mục (WindowConfig.ConfigFolder) thì
+			makefolder(WindowConfig.ConfigFolder)
+		kết thúc	
+	kết thúc
+
+	local TabHolder = AddThemeObject(SetChildren(SetProps(MakeElement("ScrollFrame", Color3.fromRGB(255, 255, 255), 4), {
+		Kích thước = UDim2.new(1, 0, 1, -50)
+	}), {
+		MakeElement("List"),
+		MakeElement("Đệm", 8, 0, 0, 8)
+	}), "Dấu phân cách")
+
+	AddConnection(TabHolder.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+		TabHolder.CanvasSize = UDim2.new(0, 0, 0, TabHolder.UIListLayout.AbsoluteContentSize.Y + 16)
+	kết thúc)
+
+	local CloseBtn = SetChildren(SetProps(MakeElement("Button"), {
+		Kích thước = UDim2.new(0.5, 0, 1, 0),
+		Vị trí = UDim2.new(0.5, 0, 0, 0),
+		Độ trong suốt của nền = 1
+	}), {
+		AddThemeObject(SetProps(MakeElement("Image", "rbxassetid7072725342"), {
+			Vị trí = UDim2.new(0, 9, 0, 6),
+			Kích thước = UDim2.new(0, 18, 0, 18)
+		}), "Chữ")
+	})
+
+	local MinimizeBtn = SetChildren(SetProps(MakeElement("Button"), {
+		Kích thước = UDim2.new(0.5, 0, 1, 0),
+		Độ trong suốt của nền = 1
+	}), {
+		AddThemeObject(SetProps(MakeElement("Image", "rbxassetid7072719338"), {
+			Vị trí = UDim2.new(0, 9, 0, 6),
+			Kích thước = UDim2.new(0, 18, 0, 18),
+			Tên = "Ico"
+		}), "Chữ")
+	})
+
+	local DragPoint = SetProps(MakeElement("TFrame"), {
+		Kích thước = UDim2.new(1, 0, 0, 50)
+	})
+
+	local WindowStuff = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 10), {
+		Kích thước = UDim2.new(0, 150, 1, -50),
+		Vị trí = UDim2.new(0, 0, 0, 50)
+	}), {
+		AddThemeObject(SetProps(MakeElement("Frame"), {
+			Kích thước = UDim2.new(1, 0, 0, 10),
+			Vị trí = UDim2.new(0, 0, 0, 0)
+		}), "Thứ hai"),
+		AddThemeObject(SetProps(MakeElement("Frame"), {
+			Kích thước = UDim2.new(0, 10, 1, 0),
+			Vị trí = UDim2.new(1, -10, 0, 0)
+		}), "Thứ hai"),
+		AddThemeObject(SetProps(MakeElement("Frame"), {
+			Kích thước = UDim2.new(0, 1, 1, 0),
+			Vị trí = UDim2.new(1, -1, 0, 0)
+		}), "Đột quỵ"),
+		TabHolder,
+		SetChildren(SetProps(MakeElement("TFrame"), {
+			Kích thước = UDim2.new(1, 0, 0, 50),
+			Vị trí = UDim2.new(0, 0, 1, -50)
+		}), {
+			AddThemeObject(SetProps(MakeElement("Frame"), {
+				Kích thước = UDim2.new(1, 0, 0, 1)
+			}), "Đột quỵ"),
+			AddThemeObject(SetChildren(SetProps(MakeElement("Frame"), {
+				AnchorPoint = Vector2.new(0, 0.5),
+				Kích thước = UDim2.new(0, 32, 0, 32),
+				Vị trí = UDim2.new(0, 10, 0.5, 0)
+			}), {
+				SetProps(MakeElement("Image", "https://www.roblox.com/headshot-thumbnail/image?userId=".. LocalPlayer.UserId .."&width=420&height=420&format=png"), {
+					Kích thước = UDim2.new(1, 0, 1, 0)
+				}),
+				AddThemeObject(SetProps(MakeElement("Image", "rbxassetid 4031889928"), {
+					Kích thước = UDim2.new(1, 0, 1, 0),
+				}), "Thứ hai"),
+				MakeElement("Corner", 1)
+			}), "Dấu phân cách"),
+			SetChildren(SetProps(MakeElement("TFrame"), {
+				AnchorPoint = Vector2.new(0, 0.5),
+				Kích thước = UDim2.new(0, 32, 0, 32),
+				Vị trí = UDim2.new(0, 10, 0.5, 0)
+			}), {
+				AddThemeObject(MakeElement("Nét"), "Nét"),
+				MakeElement("Corner", 1)
+			}),
+			AddThemeObject(SetProps(MakeElement("Label", LocalPlayer.DisplayName, WindowConfig.HidePremium and 14 or 13), {
+				Kích thước = UDim2.new(1, -60, 0, 13),
+				Vị trí = WindowConfig.HidePremium và UDim2.new(0, 50, 0, 19) hoặc UDim2.new(0, 50, 0, 12),
+				Phông chữ = Enum.Font.GothamBold,
+				ClipsDescendants = true
+			}), "Chữ"),
+			AddThemeObject(SetProps(MakeElement("Label", "", 12), {
+				Kích thước = UDim2.new(1, -60, 0, 12),
+				Vị trí = UDim2.new(0, 50, 1, -25),
+				Hiển thị = không phải WindowConfig.HidePremium
+			}), "TextDark")
+		}),
+	}), "Thứ hai")
+
+	local WindowName = AddThemeObject(SetProps(MakeElement("Label", WindowConfig.Name, 14), {
+		Kích thước = UDim2.new(1, -30, 2, 0),
+		Vị trí = UDim2.new(0, 25, 0, -24),
+		Phông chữ = Enum.Font.GothamBlack,
+		Kích thước chữ = 20
+	}), "Chữ")
+
+	local WindowTopBarLine = AddThemeObject(SetProps(MakeElement("Frame"), {
+		Kích thước = UDim2.new(1, 0, 0, 1),
+		Vị trí = UDim2.new(0, 0, 1, -1)
+	}), "Đột quỵ")
+
+	local MainWindow = AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 10), {
+		Chòm sao mẹ = Orion,
+		Vị trí = UDim2.new(0.5, -307, 0.5, -172),
+		Kích thước = UDim2.new(0, 615, 0, 344),
+		ClipsDescendants = true
+	}), {
+		--SetProps(MakeElement("Image", "rbxassetid3523728077"), {
+		-- AnchorPoint = Vector2.new(0.5, 0.5),
+		-- Vị trí = UDim2.new(0.5, 0, 0.5, 0),
+		-- Kích thước = UDim2.new(1, 80, 1, 320),
+		-- ImageColor3 = Color3.fromRGB(33, 33, 33),
+		-- Độ trong suốt của hình ảnh = 0.7
+		--}),
+		SetChildren(SetProps(MakeElement("TFrame"), {
+			Kích thước = UDim2.new(1, 0, 0, 50),
+			Tên = "TopBar"
+		}), {
+			Tên cửa sổ,
+			WindowTopBarLine,
+			AddThemeObject(SetChildren(SetProps(MakeElement("RoundFrame", Color3.fromRGB(255, 255, 255), 0, 7), {
+				Kích thước = UDim2.new(0, 70, 0, 30),
+				Vị trí = UDim2.new(1, -90, 0, 10)
+			}), {
+				AddThemeObject(MakeElement("Nét"), "Nét"),
+				AddThemeObject(SetProps(MakeElement("Frame"), {
+					Kích thước = UDim2.new(0, 1, 1, 0),
+					Vị trí = UDim2.new(0.5, 0, 0, 0)
+				}), "Đột quỵ"),
+				Nút đóng,
+				MinimizeBtn
+			}), "Thứ hai"),
+		}),
+		DragPoint,
+		WindowStuff
+	}), "Chủ yếu")
+
+	nếu WindowConfig.ShowIcon thì
+		WindowName.Position = UDim2.new(0, 50, 0, -24)
+		local WindowIcon = SetProps(MakeElement("Image", WindowConfig.Icon), {
+			Kích thước = UDim2.new(0, 20, 0, 20),
+			Vị trí = UDim2.new(0, 25, 0, 15)
+		})
+		WindowIc
